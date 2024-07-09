@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	gvproxyclient "github.com/containers/gvisor-tap-vsock/pkg/client"
@@ -74,11 +75,15 @@ func (c *Client) ResolveAndForwardSSH(ipAddr string, sshPort int) error {
 }
 
 func (c *Client) ResolveIPAddress(ctx context.Context, vmMacAddr string) (string, error) {
-	timeout := time.After(2 * time.Minute)
+	timeout := 2 * time.Minute
+	if os.Getenv("GITHUB_ACTIONS") != "" {
+		timeout = 3 * time.Minute
+	}
+	timeoutChan := time.After(timeout)
 	ticker := time.NewTicker(500 * time.Millisecond)
 	for {
 		select {
-		case <-timeout:
+		case <-timeoutChan:
 			return "", errors.New("usernet unable to resolve IP for SSH forwarding")
 		case <-ticker.C:
 			leases, err := c.Leases(ctx)
