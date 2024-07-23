@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	gvproxyclient "github.com/containers/gvisor-tap-vsock/pkg/client"
@@ -76,8 +77,11 @@ func (c *Client) ResolveAndForwardSSH(ipAddr string, sshPort int) error {
 
 func (c *Client) ResolveIPAddress(ctx context.Context, vmMacAddr string) (string, error) {
 	timeout := 2 * time.Minute
-	if os.Getenv("GITHUB_ACTIONS") != "" {
-		timeout = 3 * time.Minute
+	customTimeout := os.Getenv("CUSTOM_TIMEOUT")
+	if customTimeout != "" {
+		if parsedTimeout, err := strconv.Atoi(customTimeout); err == nil {
+			timeout = time.Duration(parsedTimeout) * time.Minute
+		}
 	}
 	timeoutChan := time.After(timeout)
 	ticker := time.NewTicker(500 * time.Millisecond)
